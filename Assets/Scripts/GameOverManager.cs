@@ -21,9 +21,9 @@ public class GameOverManager : MonoBehaviour
         {
             highScore = PlayerPrefs.GetInt("highScore");
         }
-        else 
+        else
         {
-            highScore = 0; 
+            highScore = 0;
         }
         if (score > highScore)
         {

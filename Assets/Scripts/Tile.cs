@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,48 +6,45 @@ public class Tile : MonoBehaviour
 {
     private static Tile selected;
     private SpriteRenderer Renderer;
-
     public Vector2Int Position;
 
-    private void Start()
+    // Start is called before the first frame update
+    void Start()
     {
         Renderer = GetComponent<SpriteRenderer>();
     }
 
-    public void Select()
-    {
+    public void Select() {
         Renderer.color = Color.grey;
     }
 
-    public void Unselect()
-    {
+    public void Unselect() {
         Renderer.color = Color.white;
     }
 
-    private void OnMouseDown()
-    {
-        if (selected != null)
-        {
-            if (selected == this)
+    void OnMouseDown() {
+        if (selected == null) {
+            selected = this;
+            Select();
+        } else {
+            if (selected == this) {
                 return;
+            }
             selected.Unselect();
-            if (Vector2Int.Distance(selected.Position, Position) == 1)
-            {
+            float distance = Vector2Int.Distance(Position, selected.Position);
+            if (distance == 1) {
                 GridManager.Instance.SwapTiles(Position, selected.Position);
                 selected = null;
-            }
-            else
-            {
-                SoundManager.Instance.PlaySound(SoundType.TypeSelect);
+            } else {
                 selected = this;
                 Select();
             }
         }
-        else
-        {
-            SoundManager.Instance.PlaySound(SoundType.TypeSelect);
-            selected = this;
-            Select();
-        }
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+
     }
 }
