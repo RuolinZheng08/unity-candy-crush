@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class GridManager : MonoBehaviour
 {
@@ -10,10 +11,36 @@ public class GridManager : MonoBehaviour
     public float Distance = 1.0f;
     private GameObject[,] Grid;
 
-    public static GridManager Instance {get; private set;}
+    public GameObject GameOverMenu;
+    public TextMeshProUGUI MovesText;
+    public TextMeshProUGUI ScoreText;
+
+    public static GridManager Instance { get; private set; }
+
+    public int StartingMoves = 50;
+    private int _numMoves;
+    public int NumMoves {
+        get { return _numMoves; }
+        set {
+            _numMoves = value;
+            MovesText.text = _numMoves.ToString();
+        }
+    }
+
+    private int _score;
+    public int Score {
+        get { return _score; }
+        set {
+            _score = value;
+            ScoreText.text = _score.ToString();
+        }
+    }
 
     void Awake() {
         Instance = this;
+        Score = 0;
+        NumMoves = StartingMoves;
+        GameOverMenu.SetActive(false);
     }
 
     void InitGrid() {
@@ -76,6 +103,12 @@ public class GridManager : MonoBehaviour
         return sprite;
     }
 
+    void GameOver() {
+        PlayerPrefs.SetInt("score", Score);
+        GameOverMenu.SetActive(true);
+        SoundManager.Instance.PlaySound(SoundType.TypeGameOver);
+    }
+
     public void SwapTiles(Vector2Int tile1Pos, Vector2Int tile2Pos) {
         GameObject tile1 = Grid[tile1Pos.x, tile1Pos.y];
         SpriteRenderer renderer1 = tile1.GetComponent<SpriteRenderer>();
@@ -89,13 +122,20 @@ public class GridManager : MonoBehaviour
 
         bool hasMatch = CheckMatches();
         if (!hasMatch) { // if no match after swapping, swap back
+            SoundManager.Instance.PlaySound(SoundType.TypeMove);
             temp = renderer1.sprite;
             renderer1.sprite = renderer2.sprite;
             renderer2.sprite = temp;
         } else { // some cells have been emptied, re-fill
+            SoundManager.Instance.PlaySound(SoundType.TypePop);
             while (hasMatch) {
                 FillHoles();
                 hasMatch = CheckMatches();
+            }
+            NumMoves--;
+            if (NumMoves <= 0) {
+                NumMoves = 0;
+                GameOver();
             }
         }
     }
@@ -124,6 +164,9 @@ public class GridManager : MonoBehaviour
         foreach (SpriteRenderer renderer in matchedTiles) {
             renderer.sprite = null;
         }
+        // accumulate score
+        Score += matchedTiles.Count;
+
         return matchedTiles.Count > 0;
     }
 

@@ -23,6 +23,7 @@ public class Tile : MonoBehaviour
     }
 
     void OnMouseDown() {
+        SoundManager.Instance.PlaySound(SoundType.TypeSelect);
         if (selected == null) {
             selected = this;
             Select();
