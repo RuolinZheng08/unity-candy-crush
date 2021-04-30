@@ -36,12 +36,20 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    Sprite GetSpriteAt(int row, int col) {
+    SpriteRenderer GetSpriteRendererAt(int row, int col) {
         if (col < 0 || col >= GridDimension || row < 0 || row >= GridDimension) {
             return null;
         }
         GameObject tile = Grid[row, col];
         SpriteRenderer renderer = tile.GetComponent<SpriteRenderer>();
+        return renderer;
+    }
+
+    Sprite GetSpriteAt(int row, int col) {
+        SpriteRenderer renderer = GetSpriteRendererAt(row, col);
+        if (renderer == null) {
+            return null;
+        }
         return renderer.sprite;
     }
 
@@ -59,7 +67,12 @@ public class GridManager : MonoBehaviour
         if (down2 != null && down1 == down2) {
             possibleSprites.Remove(down1);
         }
-        Sprite sprite = possibleSprites[Random.Range(0, possibleSprites.Count)];
+        Sprite sprite = ChooseRandomSprite(possibleSprites);
+        return sprite;
+    }
+
+    Sprite ChooseRandomSprite(List<Sprite> sprites) {
+        Sprite sprite = sprites[Random.Range(0, sprites.Count)];
         return sprite;
     }
 
@@ -73,6 +86,88 @@ public class GridManager : MonoBehaviour
         Sprite temp = renderer1.sprite;
         renderer1.sprite = renderer2.sprite;
         renderer2.sprite = temp;
+
+        bool hasMatch = CheckMatches();
+        if (!hasMatch) { // if no match after swapping, swap back
+            temp = renderer1.sprite;
+            renderer1.sprite = renderer2.sprite;
+            renderer2.sprite = temp;
+        } else { // some cells have been emptied, re-fill
+            while (hasMatch) {
+                FillHoles();
+                hasMatch = CheckMatches();
+            }
+        }
+    }
+
+    bool CheckMatches() {
+        HashSet<SpriteRenderer> matchedTiles = new HashSet<SpriteRenderer>(); // to remove
+        for (int row = 0; row < GridDimension; row++) {
+            for (int col = 0; col < GridDimension; col++) {
+                SpriteRenderer renderer = GetSpriteRendererAt(row, col);
+
+                List<SpriteRenderer> horizontalMatches = FindColumnMatchForTile(row, col, renderer.sprite);
+                if (horizontalMatches.Count >= 2) {
+                    matchedTiles.UnionWith(horizontalMatches);
+                    matchedTiles.Add(renderer);
+                }
+
+                List<SpriteRenderer> verticalMatches = FindRowMatchForTile(row, col, renderer.sprite);
+                if (verticalMatches.Count >= 2) {
+                    matchedTiles.UnionWith(verticalMatches);
+                    matchedTiles.Add(renderer);
+                }
+            }
+        }
+
+        // remove
+        foreach (SpriteRenderer renderer in matchedTiles) {
+            renderer.sprite = null;
+        }
+        return matchedTiles.Count > 0;
+    }
+
+    List<SpriteRenderer> FindColumnMatchForTile(int row, int col, Sprite sprite) {
+        List<SpriteRenderer> ret = new List<SpriteRenderer>();
+        for (int newCol = col + 1; newCol < GridDimension; newCol++) {
+            SpriteRenderer nextCol = GetSpriteRendererAt(row, newCol);
+            if (nextCol.sprite != sprite) {
+                break;
+            }
+            ret.Add(nextCol);
+        }
+        return ret;
+    }
+
+    List<SpriteRenderer> FindRowMatchForTile(int row, int col, Sprite sprite) {
+        List<SpriteRenderer> ret = new List<SpriteRenderer>();
+        for (int newRow = row + 1; newRow < GridDimension; newRow++) {
+            SpriteRenderer nextRow = GetSpriteRendererAt(newRow, col);
+            if (nextRow.sprite != sprite) {
+                break;
+            }
+            ret.Add(nextRow);
+        }
+        return ret;
+    }
+
+    void FillHoles() {
+        int topmostRow = GridDimension - 1;
+        for (int row = 0; row < GridDimension; row++) {
+            for (int col = 0; col < GridDimension; col++) {
+                // while not occupied by a sprite, try grabbing a sprite from the cell above
+                while (GetSpriteAt(row, col) == null) {
+                    for (int filler = row; filler < topmostRow; filler++) {
+                        SpriteRenderer curr = GetSpriteRendererAt(filler, col);
+                        SpriteRenderer above = GetSpriteRendererAt(filler + 1, col);
+                        curr.sprite = above.sprite;
+                    }
+                    // put a random sprite at top, it may cascade down
+                    SpriteRenderer topmost = GetSpriteRendererAt(topmostRow, col);
+                    topmost.sprite = ChooseRandomSprite(Sprites);
+                }
+            }
+        }
     }
 
     // Start is called before the first frame update
@@ -82,9 +177,4 @@ public class GridManager : MonoBehaviour
         InitGrid();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
 }
