@@ -104,6 +104,12 @@ public class GridManager : MonoBehaviour
     }
 
     void GameOver() {
+        // set grid cells to be non-clickable
+        for (int row = 0; row < GridDimension; row++) {
+            for (int col = 0; col < GridDimension; col++) {
+                Grid[row, col].SetActive(false);
+            }
+        }
         PlayerPrefs.SetInt("score", Score);
         GameOverMenu.SetActive(true);
         SoundManager.Instance.PlaySound(SoundType.TypeGameOver);
